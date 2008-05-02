@@ -8,12 +8,12 @@
 
 	var Version = '0.1';
 	var lastUpdate = '2008.05.02';
-	var scriptURL = 'http://dcortesi.com/tdmd/twitdm.js';
+	var scriptURL = 'http://dcortesi.com/dm_deleter/tdmd.js';
 	var scriptText = '';
 
     var side = document.getElementById('side');
     if(side == null) return;
-    side.innerHTML = '<div style="margin-bottom:20px"><B>Twitter DM Deleter</B><br/><div style="margin-left:10px;color:#666666;margin-bottom:10px;">last update:'+lastUpdate+scriptText+'</div><b>Select DM\'s to Delete</b><br/><form id="frm_delete" name="frm_delete"><input id="delete_dm_all" type="radio" value="all" name="delete_dm_type" checked="checked"/> <label for="delete_dm_all">all dm\'s</label><br /><input id="delete_dm_user" type="radio" value="user" name="delete_dm_type" /> <label for="delete_dm_user">dm\'s from:</label><input id="delete_dm_username" type="text" name="delete_dm_username" /><br /><br /><input type="button" id="delete_dm_submit" value="Delete!" /></form></div>' + side.innerHTML;
+    side.innerHTML = '<div style="margin-bottom:20px"><B>Twitter DM Deleter</B><br/><div style="margin-left:10px;color:#666666;margin-bottom:10px;">last update:'+lastUpdate+scriptText+'</div><b>Select DM\'s to Delete</b><br/><form id="frm_delete" name="frm_delete"><input id="delete_dm_all" type="radio" value="all" name="delete_dm_type" checked="checked"/> <label for="delete_dm_all">all dm\'s</label><br /><input id="delete_dm_user" type="radio" value="user" name="delete_dm_type" /> <label for="delete_dm_user">dm\'s from:</label><input onfocus="$(\'delete_dm_user\').checked=true" id="delete_dm_username" type="text" name="delete_dm_username" /><br /><br /><input type="button" id="delete_dm_submit" value="Delete!" /></form></div>' + side.innerHTML;
     
     var deleteMessages = function(iframe) {
         // Function to delete messages in the iframe that called it
@@ -46,9 +46,6 @@
                 return;
             }
         }
-        
-        // Retrieve the list of rows for each direct message
-        //var td = bg_twitter.getElementsByTagName('table')[0].getElementsByTagName('td');
         
         // Replace the contents of the table on screen with the contents of the iframe
         document.getElementsByTagName('table')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML
@@ -138,11 +135,18 @@
     
     var loadFrame = function() {
         var divs = document.getElementsByTagName("div");
-        //alert(divs[27].innerHTML);
-        //document.getElementById("element").innerHTML="some text";
-        //window.frames['IFrame'].document
-        //var tmp_ref = document.getElementById('delete_dm_older');
-        //.src = "http://twitter.com/direct_messages";
+        
+        var delete_type = 'all';
+        for(var i = 0; i < document.frm_delete.delete_dm_type.length; i++) {
+            if (document.frm_delete.delete_dm_type[i].checked)
+                delete_type = document.frm_delete.delete_dm_type[i].value;
+        }
+        if (delete_type == "all") {
+            var really = confirm("You selected all - are you sure you want to wipe out all your Direct Messages?");
+            if (!really) {
+                return;
+            }
+        }
         
         var iframe =  document.createElement('iframe'); 
         iframe.style.border = '1px solid #FFFFFF';
@@ -155,65 +159,10 @@
         iframe.src = 'http://twitter.com/direct_messages?page=1';
         divs[27].parentNode.appendChild(iframe);
         
-        // if (iframe.contentDocument) {
-        //     var bg_twitter = iframe.contentDocument;
-        // } else if (iframe.contentWindow) {
-        //     var bg_twitter = iframe.contentWindow.document;
-        // }
-        // alert(bg_twitter.getElementById('text'));
-        // bg_twitter.getElementById('text').innerHTML = "w00t!";
-        // alert(bg_twitter.getElementById('text').innerHTML);
-        
     }
     if ($('delete_dm_submit').addEventListener)
         $('delete_dm_submit').addEventListener('click', loadFrame, false)
     else
         $('delete_dm_submit').attachEvent('onclick', loadFrame)
 
-    /**
-    var td = document.getElementById('timeline').getElementsByTagName('td');
-    for(var i = 0,len = td.length;i<len;i++){
-        if(td[i].className == 'content'){
-            var span = document.createElement('span');
-            var entry = td[i].getElementsByTagName('span');
-            for(var j = 0;j<entry.length;j++){
-                if(entry[j].className.indexOf('entry-content')>=0){
-                    var t = (entry[j].innerHTML||"").replace(/^\s+|\s+$/g, "")
-                    span.innerHTML = '<a href="javascript:void(0);">translate!</a>';
-                    span.style.marginLeft='10px';
-
-                    var click_func = function(e){
-                        var this_span = (e.srcElement)?e.srcElement:this;
-                        
-                         var tmp = this_span.parentNode.parentNode.getElementsByTagName('span');
-                         for(p in tmp){
-                             if(tmp[p].className && tmp[p].className.indexOf('entry-content')>=0){
-                                 var word = (tmp[p]||"").innerHTML.replace(/^\s+|\s+$/g, "");
-                                 word = word.replace(/<.+?>/g,'');//remove tag
-                                 var src = 'http://www.chrisryu.com/translate_twitter/translate.html?t=' + encodeURIComponent(word) + '&l=' + document.getElementById('trans_your_language').value;
-                                 var iframe =  document.createElement('iframe');
-                                 iframe.style.border = '1px solid #FFFFFF';
-                                 iframe.frameBorder = '0';
-                                 iframe.style.display = 'block';
-                                 iframe.style.height = '100px';
-                                 iframe.style.width = '100%';
-                                 iframe.src = src;
-                                 this_span.parentNode.appendChild(iframe);
-                                 this_span.style.display='none';
-                             }
-                         }
-                    }
-                    
-                    if (span.addEventListener)
-                        span.addEventListener('click', click_func, false);
-                    else
-                        span.attachEvent('onclick', click_func);
-                    
-                    
-                    
-                    td[i].appendChild(span);
-                }
-            }
-        }
-    }*/
 })()
