@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name          Twitter DM Deleter
-// @description   Add "Translate!" link and language select pulldown to twitter timeline.Translate feature is using Google AJAX Language API.
+// @description   Delete all your sensitive messages
 // @include       http://twitter.com/direct_messages
-// @include       https://twitter.com/direct_messages
 // ==/UserScript==
 (function(){
 
-	var Version = '0.1';
+	var Version = '0.2';
 	var lastUpdate = '2008.05.02';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/tdmd.js';
 	var scriptText = '';
