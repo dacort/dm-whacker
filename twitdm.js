@@ -5,14 +5,14 @@
 // ==/UserScript==
 (function(){
 
-	var Version = '0.2';
-	var lastUpdate = '2008.05.02';
+	var Version = '0.2.5';
+	var lastUpdate = '2008.05.03';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/tdmd.js';
 	var scriptText = '';
 
     var side = document.getElementById('side');
     if(side == null) return;
-    side.innerHTML = '<div style="margin-bottom:20px"><B>Twitter DM Deleter</B><br/><div style="margin-left:10px;color:#666666;margin-bottom:10px;">last update:'+lastUpdate+scriptText+'</div><b>Select DM\'s to Delete</b><br/><form id="frm_delete" name="frm_delete"><input id="delete_dm_all" type="radio" value="all" name="delete_dm_type" checked="checked"/> <label for="delete_dm_all">all dm\'s</label><br /><input id="delete_dm_user" type="radio" value="user" name="delete_dm_type" /> <label for="delete_dm_user">dm\'s from:</label><input onfocus="$(\'delete_dm_user\').checked=true" id="delete_dm_username" type="text" name="delete_dm_username" /><br /><br /><input type="button" id="delete_dm_submit" value="Delete!" /></form></div>' + side.innerHTML;
+    side.innerHTML = '<div style="margin-bottom:20px"><B>Twitter DM Deleter</B><br/><div style="margin-left:10px;color:#666666;margin-bottom:10px;">version:'+Version+'<br/>last update:'+lastUpdate+scriptText+'</div><b>Select DM\'s to Delete</b><br/><form id="frm_delete" name="frm_delete"><input id="delete_dm_all" type="radio" value="all" name="delete_dm_type" checked="checked"/> <label for="delete_dm_all">all dm\'s</label><br /><input id="delete_dm_user" type="radio" value="user" name="delete_dm_type" /> <label for="delete_dm_user">dm\'s with user:</label><input onfocus="$(\'delete_dm_user\').checked=true" id="delete_dm_username" type="text" name="delete_dm_username" /><br /><br /><input id="delete_dm_inbox" type="checkbox" value="delete_inbox" name="delete_dm_inbox" checked="true" /> <label for="delete_dm_inbox">include Inbox items</label><br /><input id="delete_dm_sent" type="checkbox" value="delete_sent" name="delete_dm_sent" /> <label for="delete_dm_sent">include Sent items</label><br /><br /><input type="button" id="delete_dm_submit" value="Delete!" /></form></div>' + side.innerHTML;
     
     var deleteMessages = function(iframe) {
         // Function to delete messages in the iframe that called it
@@ -24,10 +24,22 @@
             var bg_twitter = iframe.contentWindow.document;
         }
         
+        var url = 'http://twitter.com/direct_messages';
+        if ($('dpc_twitter_dms').src.indexOf("/sent") > 0) {
+            url += '/sent';
+        } else if ($('delete_dm_inbox').checked == false && $('delete_dm_sent').checked == true) {
+            url += '/sent';
+        }
+        
         // See if we've reached the end.
         if (!bg_twitter.getElementsByTagName('table')[0] || bg_twitter.getElementsByTagName('table')[0].getElementsByTagName('td').length == 0) {
-            alert('You\'re all done!\nThanks for using the Twitter DM Deleter.\n\n--@dacort');
-            location.href = "http://twitter.com/direct_messages";
+            if ($('delete_dm_sent').checked && ($('dpc_twitter_dms').src.indexOf("/sent") < 0)) {
+                $('dpc_twitter_dms').src = url + '/sent?page=1';
+                return;
+            } else {
+                alert('You\'re all done!\nThanks for using the Twitter DM Deleter.\n\n--@dacort');
+                location.href = "http://twitter.com/direct_messages";
+            }
         }
         
         // Retrieve the settings for the user, default to all
@@ -47,7 +59,12 @@
         }
         
         // Replace the contents of the table on screen with the contents of the iframe
-        document.getElementsByTagName('table')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML
+        // If this user has no messages, we have to use the h2 header
+        if (document.getElementsByTagName('table')[0]) {
+            document.getElementsByTagName('table')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML
+        } else {
+            document.getElementById('content').getElementsByTagName('h2')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML
+        }
         var visible_td = document.getElementsByTagName('table')[0].getElementsByTagName('td');
  
         // With this for loop, we're assuming that Twitter outputs it's td's in the same order (i+=3)
@@ -84,20 +101,9 @@
             }
         }
         
-        // Make sure everything finishes loading (and that this doesn't run for too long)
-        // var myInterval = window.setInterval(function (a,b) {
-        //   myNumber++;
-        // },1000);
-        // window.setTimeout(function (a,b) {
-        //   clearInterval(myInterval);
-        // },3500);
-        
-        
         var wait = true;
         var now = new Date();
         var startingMSeconds = now.getTime();
-        
-        //var intervalID = setInterval("waitForComplete();", 500);
         
         var waitForComplete = function() {
             var done = 0;
@@ -123,7 +129,7 @@
                 }
 
                 // Make sure we even have another page (TODO)
-                $('dpc_twitter_dms').src = 'http://twitter.com/direct_messages?page='+current_page;
+                $('dpc_twitter_dms').src = url + '?page='+current_page;
             }
         }
         
@@ -134,7 +140,17 @@
     
     var loadFrame = function() {
         var divs = document.getElementsByTagName("div");
+        var url = 'http://twitter.com/direct_messages?page=1';
         
+        // Error checking - make sure at least one checkbox is marked
+        if ($('delete_dm_inbox').checked == false && $('delete_dm_sent').checked == false) {
+            alert('You need to select either "Inbox" or "Sent" to delete.');
+            return;
+        } else if ($('delete_dm_inbox').checked == false && $('delete_dm_sent').checked == true) {
+            url = 'http://twitter.com/direct_messages/sent?page=1';
+        }
+        
+        // Error checking - prompt the user to delete all
         var delete_type = 'all';
         for(var i = 0; i < document.frm_delete.delete_dm_type.length; i++) {
             if (document.frm_delete.delete_dm_type[i].checked)
@@ -155,7 +171,7 @@
         iframe.style.width = '100%';       
         iframe.id = 'dpc_twitter_dms';
         iframe.onload=function(){deleteMessages(document.getElementById('dpc_twitter_dms'))};
-        iframe.src = 'http://twitter.com/direct_messages?page=1';
+        iframe.src = url;
         divs[27].parentNode.appendChild(iframe);
         
     }
