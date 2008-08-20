@@ -5,10 +5,10 @@
 // ==/UserScript==
 (function(){
 
-	var Version = '0.2.6';
-	var lastUpdate = '2008.05.03';
+	var Version = '0.3.0';
+	var lastUpdate = '2008.08.04';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/tdmd.js';
-	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='http://dcortesi.com/dm_deleter/tdmd.js';document.body.appendChild(s);})();void(0);";
+	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='" + scriptURL + "';document.body.appendChild(s);})();void(0);";
 
     var side = document.getElementById('side');
     if(side == null) return;
@@ -64,43 +64,47 @@
         // Replace the contents of the table on screen with the contents of the iframe
         // If this user has no messages, we have to use the h2 header
         if (document.getElementsByTagName('table')[0]) {
-            document.getElementsByTagName('table')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML
+            document.getElementsByTagName('table')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML;
         } else {
-            document.getElementById('content').getElementsByTagName('h2')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML
+            document.getElementById('content').getElementsByTagName('h2')[0].parentNode.innerHTML = bg_twitter.getElementsByTagName('table')[0].parentNode.innerHTML;
         }
         var visible_td = document.getElementsByTagName('table')[0].getElementsByTagName('td');
         
         var messages_deleted = 0;
         var arr_deleted = [];
+        var callbacks = 0;
  
         // With this for loop, we're assuming that Twitter outputs it's td's in the same order (i+=3)
         for(var i = 0;i<=visible_td.length-3;i+=3){
             // Retrieve the destroy link and the username
-            var delete_link = visible_td[i].getElementsByTagName("a")[0].href;
             var username = visible_td[i+2].getElementsByTagName("a")[0].innerHTML;
+            var delete_form = visible_td[i].getElementsByTagName("form")[0];
+            var dm_id = delete_form.action.substr(delete_form.action.lastIndexOf("/")+1);
             
             // If we're deleting by user, check this message
             if (delete_type == "user" && username.toLowerCase() == username_to_del) {
                 //flare++
                 visible_td[i].parentNode.style.opacity = "0.25";
-                var dm_id = delete_link.substr(delete_link.lastIndexOf("/")+1);
-                // visible_td[i].parentNode.id = dm_id;
+                
                 visible_td[i].getElementsByTagName('img')[0].id = 'dpc_img_' + dm_id;
                 visible_td[i].getElementsByTagName('img')[0].onerror=function(){this.parentNode.parentNode.parentNode.parentNode.parentNode.style.display = 'none';};
-                // visible_td[i].getElementsByTagName('img')[0].onerror=function(){
-                //     var tr = this.parentNode.parentNode.parentNode.parentNode.parentNode;
-                //     tr.parentNode.removechild(tr);
-                // };
-                visible_td[i].getElementsByTagName('img')[0].src = delete_link;
-                arr_deleted[messages_deleted] = visible_td[i].getElementsByTagName('img')[0].id
+                
+                // Make an AJAX query using Twitter's included jQuery library
+                jQuery.post(delete_form.action,
+                    {authenticity_token: delete_form.authenticity_token.value},
+                    function() {
+                        callbacks++;
+                    }
+                );
+                arr_deleted[messages_deleted] = visible_td[i].getElementsByTagName('img')[0].id;
                 messages_deleted++;
             } else if (delete_type == "all") {
                 //flare++
                 visible_td[i].parentNode.style.opacity = "0.25";
                 visible_td[i].getElementsByTagName('img')[0].id = 'dpc_img_' + dm_id;
                 visible_td[i].getElementsByTagName('img')[0].onerror=function(){this.parentNode.parentNode.parentNode.parentNode.parentNode.style.display = 'none';};
-                visible_td[i].getElementsByTagName('img')[0].src = delete_link;
-                arr_deleted[messages_deleted] = visible_td[i].getElementsByTagName('img')[0].id
+                jQuery.post(delete_form.action,{authenticity_token: delete_form.authenticity_token.value},function() {callbacks++;});
+                arr_deleted[messages_deleted] = visible_td[i].getElementsByTagName('img')[0].id;
                 messages_deleted++;
             }
         }
@@ -120,12 +124,9 @@
         
         var waitForComplete = function() {
             var done = 0;
-            for (var i=0; i<arr_deleted.length; i++) {
-                if (document.getElementById(arr_deleted[i].readyState == 4)) {
-                    done++;
-                }
-            }
-            if (done == arr_deleted.length) { // Let's go!
+            
+            // The jQuery callback increments callbacks
+            if (callbacks == arr_deleted.length) { // Let's go!
                 wait = false;
             }
             if ((new Date().getTime() - startingMSeconds) > 10000) {
@@ -176,6 +177,7 @@
             }
         }
         
+		// iframe for loading pages
         var iframe =  document.createElement('iframe'); 
         iframe.style.border = '1px solid #FFFFFF';
         iframe.frameBorder = '0';
