@@ -5,8 +5,8 @@
 // ==/UserScript==
 (function(){
 
-	var Version = '0.3.3_004';
-	var lastUpdate = '2008.11.30';
+	var Version = '0.3.4_001';
+	var lastUpdate = '2008.12.09';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/twitdm_dev.js';
 	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='" + scriptURL + "';document.body.appendChild(s);})();void(0);";
 
@@ -87,7 +87,7 @@
             // Not sure if this will work when I actually have fast access again.
             var $status = visible_td[i+2].parentNode;
             // The status's numerical ID
-            var dm_id = $status.id.replace(/status_/, '');
+            var dm_id = $status.id.replace(/direct_message_/, '');
             var link = '/direct_messages/destroy/' + dm_id
             var token = twttr.form_authenticity_token
             
