@@ -5,14 +5,14 @@
 // ==/UserScript==
 (function(){
 
-	var Version = '0.3.4_001';
-	var lastUpdate = '2008.12.09';
+	var Version = '0.4_018';
+	var lastUpdate = '2009.01.04';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/twitdm_dev.js';
 	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='" + scriptURL + "';document.body.appendChild(s);})();void(0);";
 
     var side = document.getElementById('side');
     if(side == null) return;
-    side.innerHTML = '<div class="section" style="margin-bottom:20px"><B>Twitter DM Deleter</B><br/><div style="margin-left:10px;color:#666666;margin-bottom:10px;">version:'+Version+'<br/>last update:'+lastUpdate+'</div><b>Select DM\'s to Delete</b><br/><form id="frm_delete" name="frm_delete"><input id="delete_dm_all" type="radio" value="all" name="delete_dm_type" checked="checked"/> <label for="delete_dm_all">all dm\'s</label><br /><input id="delete_dm_user" type="radio" value="user" name="delete_dm_type" /> <label for="delete_dm_user">dm\'s with user:</label><input onfocus="$(\'#delete_dm_user\').attr(\'checked\',true)" id="delete_dm_username" type="text" name="delete_dm_username" /><br /><br /><input id="delete_dm_inbox" type="checkbox" value="delete_inbox" name="delete_dm_inbox" checked="true" /> <label for="delete_dm_inbox">include Inbox items</label><br /><input id="delete_dm_sent" type="checkbox" value="delete_sent" name="delete_dm_sent" /> <label for="delete_dm_sent">include Sent items</label><br /><br /><input type="button" id="delete_dm_submit" value="Delete!" /><input type="hidden" id="delete_dm_count_inbox" value="0"/><input type="hidden" id="delete_dm_count_sent" value="0"/></form></div>' + side.innerHTML;
+    side.innerHTML = '<div class="section" style="margin-bottom:20px"><B>Twitter DM Deleter</B><br/><div style="margin-left:10px;color:#666666;margin-bottom:10px;">version:'+Version+'<br/>last update:'+lastUpdate+'</div><b>Select DM\'s to Delete</b><br/><form id="frm_delete" name="frm_delete"><input id="delete_dm_all" type="radio" value="all" name="delete_dm_type" checked="checked"/> <label for="delete_dm_all">all dm\'s</label><br /><input id="delete_dm_user" type="radio" value="user" name="delete_dm_type" /> <label for="delete_dm_user">dm\'s with user:</label><input onfocus="$(\'#delete_dm_user\').attr(\'checked\',true)" id="delete_dm_username" type="text" name="delete_dm_username" /><br /><br /><input id="delete_dm_inbox" type="checkbox" value="delete_inbox" name="delete_dm_inbox" checked="true" /> <label for="delete_dm_inbox">include Inbox items</label><br /><input id="delete_dm_sent" type="checkbox" value="delete_sent" name="delete_dm_sent" /> <label for="delete_dm_sent">include Sent items</label><br /><br /><a href="#" id="advlink" onclick="$(\'#advanced_feat\').slideToggle(\'normal\',function(){$(\'#advlink\')[0].innerHTML = ($(\'#advlink\')[0].innerHTML == \'+ Advanced Features\'? \'- Advanced Features\':\'+ Advanced Features\')})">+ Advanced Features</a><div id="advanced_feat" style="display: none;"><br /><input id="delete_dm_match" type="checkbox" value="match" name="delete_dm_match" /> <label for="delete_dm_match">dm\'s containing text:</label><input onfocus="$(\'#delete_dm_match\').attr(\'checked\',true)" id="delete_dm_matchtext" type="text" name="delete_dm_matchtext" /><br /><input id="match_type_simple" type="radio" value="simple" name="match_type" checked="checked"/> <label for="match_type_simple">Simple</label> <input id="match_type_regex" type="radio" value="regex" name="match_type" onclick="if (!confirm(\'Regular expressions are intended for advanced users. Please click OK only if you know what you are doing. :)\\n\\nPlease note, all searches are currently NOT case-sensitive.\')) {$(\'#match_type_simple\').attr(\'checked\', true);}" /> <label for="match_type_regex">RegEx Power!</label></div><br /><br /><input type="button" id="delete_dm_submit" value="Delete!" /><input type="hidden" id="delete_dm_count_inbox" value="0"/><input type="hidden" id="delete_dm_count_sent" value="0"/><br /><br /></form></div>' + side.innerHTML;
     
     var deleteMessages = function(iframe) {
         // Function to delete messages in the iframe that called it
@@ -61,6 +61,12 @@
             }
         }
         
+        // Retrieve the settings for matching text, default to none
+        var match_text = false;
+        if (document.frm_delete.delete_dm_match.checked && $("#delete_dm_matchtext").val().length > 0) {
+          match_text = $("#delete_dm_matchtext").val().toLowerCase();
+        }
+        
         // Replace the contents of the table on screen with the contents of the iframe
         // If this user has no messages, we have to use the h2 header
         if (document.getElementById('timeline')) {
@@ -79,17 +85,26 @@
             // Retrieve the destroy link and the username
             var username = visible_td[i+1].getElementsByTagName("a")[0].innerHTML;
             
-            // var match = visible_td[i+2].getElementsByTagName('a')[1].attributes['onclick'].value.match(/\/direct_messages\/destroy\/(\d+)\?authenticity_token=(\w+)&page=\d+'/);
-            // var link = match[0];
-            // var dm_id = match[1];
-            // var token = match[2];
-            
             // Not sure if this will work when I actually have fast access again.
             var $status = visible_td[i+2].parentNode;
             // The status's numerical ID
             var dm_id = $status.id.replace(/direct_message_/, '');
             var link = '/direct_messages/destroy/' + dm_id
             var token = twttr.form_authenticity_token
+            
+            // Determine if basic or advanced mode is selected and match appropriately
+            var match = -1;
+            if (match_text && $("#match_type_simple")[0].checked) {
+              match = visible_td[i+1].getElementsByTagName("span")[0].textContent.toLowerCase().indexOf(match_text);
+            } else if (match_text && $("#match_type_regex")[0].checked) {
+              match = visible_td[i+1].getElementsByTagName("span")[0].textContent.search(new RegExp(match_text, "i"));
+            }
+            
+            // If dm's matching text are to be deleted, see if we have a match
+            // If no match, skip to the next one.
+            if (match_text && match == -1) {
+              continue;
+            }
             
             // If we're deleting by user, check this message
             if (delete_type == "user" && username.toLowerCase() == username_to_del) {
@@ -176,7 +191,16 @@
                 delete_type = document.frm_delete.delete_dm_type[i].value;
         }
         if (delete_type == "all") {
-            var really = confirm("You selected all - are you sure you want to wipe out all your Direct Messages?");
+          var msg = "You selected all - are you sure you want to wipe out all your Direct Messages";
+          if (document.frm_delete.delete_dm_match.checked && $("#delete_dm_matchtext").val().length > 0) {
+            if ($("#match_type_simple")[0].checked) {
+              msg += " containing the text \"" + $("#delete_dm_matchtext").val() + "\"";
+            } else if ($("#match_type_regex")[0].checked) {
+              msg += " matching the regular expression \"" + $("#delete_dm_matchtext").val() + "\"";
+            }
+            
+          }
+            var really = confirm(msg + "?");
             if (!really) {
                 return;
             }
