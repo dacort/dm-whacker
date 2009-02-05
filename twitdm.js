@@ -5,8 +5,8 @@
 // ==/UserScript==
 (function(){
 
-	var Version = '0.4_018';
-	var lastUpdate = '2009.01.04';
+	var Version = '0.4.1';
+	var lastUpdate = '2009.02.04';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/twitdm_dev.js';
 	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='" + scriptURL + "';document.body.appendChild(s);})();void(0);";
 
@@ -32,7 +32,7 @@
         }
         
         // See if we've reached the end.
-        if (!bg_twitter.getElementById('timeline') || bg_twitter.getElementById('timeline').getElementsByTagName('td').length == 0) {
+        if (!bg_twitter.getElementById('timeline') || bg_twitter.getElementById('timeline').getElementsByTagName('li').length == 0) {
             if ($('#delete_dm_sent').attr("checked") && ($('#dpc_twitter_dms').attr("src").indexOf("/sent") < 0)) {
                 $('#dpc_twitter_dms').attr("src", url + '/sent?page=1');
                 return;
@@ -74,30 +74,28 @@
         } else {
             document.getElementById('content').getElementsByTagName('h2')[0].parentNode.innerHTML = bg_twitter.getElementById('timeline').parentNode.innerHTML;
         }
-        var visible_td = document.getElementById('timeline').getElementsByTagName('td');
+        var tweet_list = document.getElementById('timeline').getElementsByTagName('li');
         
         var messages_deleted = 0;
         var arr_deleted = [];
         var callbacks = 0;
  
-        // With this for loop, we're assuming that Twitter outputs it's td's in the same order (i+=3)
-        for(var i = 0;i<=visible_td.length-3;i+=3){
+        // Fortunately(HAH!), Twitter updated their UI and I can select by clean class name now.
+        for(var i = 0;i<tweet_list.length;i+=1){
             // Retrieve the destroy link and the username
-            var username = visible_td[i+1].getElementsByTagName("a")[0].innerHTML;
+            var username = tweet_list[i].getElementsByClassName('status-body')[0].getElementsByTagName("a")[0].innerHTML;
             
-            // Not sure if this will work when I actually have fast access again.
-            var $status = visible_td[i+2].parentNode;
             // The status's numerical ID
-            var dm_id = $status.id.replace(/direct_message_/, '');
+            var dm_id = tweet_list[i].id.replace(/direct_message_/, '');
             var link = '/direct_messages/destroy/' + dm_id
             var token = twttr.form_authenticity_token
             
             // Determine if basic or advanced mode is selected and match appropriately
             var match = -1;
             if (match_text && $("#match_type_simple")[0].checked) {
-              match = visible_td[i+1].getElementsByTagName("span")[0].textContent.toLowerCase().indexOf(match_text);
+              match = tweet_list[i].getElementsByClassName('entry-content')[0].textContent.toLowerCase().indexOf(match_text);
             } else if (match_text && $("#match_type_regex")[0].checked) {
-              match = visible_td[i+1].getElementsByTagName("span")[0].textContent.search(new RegExp(match_text, "i"));
+              match = tweet_list[i].getElementsByClassName('entry-content')[0].textContent.search(new RegExp(match_text, "i"));
             }
             
             // If dm's matching text are to be deleted, see if we have a match
@@ -109,22 +107,23 @@
             // If we're deleting by user, check this message
             if (delete_type == "user" && username.toLowerCase() == username_to_del) {
                 //flare++
-                visible_td[i].parentNode.style.opacity = "0.25";
+                tweet_list[i].style.opacity = "0.25";
                 
-                visible_td[i].getElementsByTagName('img')[0].id = 'dpc_img_' + dm_id;
-                visible_td[i].getElementsByTagName('img')[0].onerror=function(){this.parentNode.parentNode.parentNode.parentNode.parentNode.style.display = 'none';};
+                // This is used later to track deleted elements
+                tweet_list[i].getElementsByTagName('img')[0].id = 'dpc_img_' + dm_id;
+                tweet_list[i].getElementsByTagName('img')[0].onerror=function(){this.parentNode.parentNode.parentNode.style.display = 'none';};
                 
                 // Make an AJAX query using Twitter's included jQuery library
                 jQuery.post(link,{authenticity_token: token},function() {callbacks++;});
-                arr_deleted[messages_deleted] = visible_td[i].getElementsByTagName('img')[0].id;
+                arr_deleted[messages_deleted] = tweet_list[i].getElementsByTagName('img')[0].id;
                 messages_deleted++;
             } else if (delete_type == "all") {
                 //flare++
-                visible_td[i].parentNode.style.opacity = "0.25";
-                visible_td[i].getElementsByTagName('img')[0].id = 'dpc_img_' + dm_id;
-                visible_td[i].getElementsByTagName('img')[0].onerror=function(){this.parentNode.parentNode.parentNode.parentNode.parentNode.style.display = 'none';};
+                tweet_list[i].style.opacity = "0.25";
+                tweet_list[i].getElementsByTagName('img')[0].id = 'dpc_img_' + dm_id;
+                tweet_list[i].getElementsByTagName('img')[0].onerror=function(){this.parentNode.parentNode.parentNode.style.display = 'none';};
                 jQuery.post(link,{authenticity_token: token},function() {callbacks++;});
-                arr_deleted[messages_deleted] = visible_td[i].getElementsByTagName('img')[0].id;
+                arr_deleted[messages_deleted] = tweet_list[i].getElementsByTagName('img')[0].id;
                 messages_deleted++;
             }
         }
