@@ -5,8 +5,8 @@
 // ==/UserScript==
 (function(){
 
-	var Version = '0.4.1';
-	var lastUpdate = '2009.02.04';
+	var Version = '0.5_017';
+	var lastUpdate = '2009.02.15';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/twitdm_dev.js';
 	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='" + scriptURL + "';document.body.appendChild(s);})();void(0);";
 
@@ -14,27 +14,22 @@
     if(side == null) return;
     side.innerHTML = '<div class="section" style="margin-bottom:20px"><B>Twitter DM Deleter</B><br/><div style="margin-left:10px;color:#666666;margin-bottom:10px;">version:'+Version+'<br/>last update:'+lastUpdate+'</div><b>Select DM\'s to Delete</b><br/><form id="frm_delete" name="frm_delete"><input id="delete_dm_all" type="radio" value="all" name="delete_dm_type" checked="checked"/> <label for="delete_dm_all">all dm\'s</label><br /><input id="delete_dm_user" type="radio" value="user" name="delete_dm_type" /> <label for="delete_dm_user">dm\'s with user:</label><input onfocus="$(\'#delete_dm_user\').attr(\'checked\',true)" id="delete_dm_username" type="text" name="delete_dm_username" /><br /><br /><input id="delete_dm_inbox" type="checkbox" value="delete_inbox" name="delete_dm_inbox" checked="true" /> <label for="delete_dm_inbox">include Inbox items</label><br /><input id="delete_dm_sent" type="checkbox" value="delete_sent" name="delete_dm_sent" /> <label for="delete_dm_sent">include Sent items</label><br /><br /><a href="#" id="advlink" onclick="$(\'#advanced_feat\').slideToggle(\'normal\',function(){$(\'#advlink\')[0].innerHTML = ($(\'#advlink\')[0].innerHTML == \'+ Advanced Features\'? \'- Advanced Features\':\'+ Advanced Features\')})">+ Advanced Features</a><div id="advanced_feat" style="display: none;"><br /><input id="delete_dm_match" type="checkbox" value="match" name="delete_dm_match" /> <label for="delete_dm_match">dm\'s containing text:</label><input onfocus="$(\'#delete_dm_match\').attr(\'checked\',true)" id="delete_dm_matchtext" type="text" name="delete_dm_matchtext" /><br /><input id="match_type_simple" type="radio" value="simple" name="match_type" checked="checked"/> <label for="match_type_simple">Simple</label> <input id="match_type_regex" type="radio" value="regex" name="match_type" onclick="if (!confirm(\'Regular expressions are intended for advanced users. Please click OK only if you know what you are doing. :)\\n\\nPlease note, all searches are currently NOT case-sensitive.\')) {$(\'#match_type_simple\').attr(\'checked\', true);}" /> <label for="match_type_regex">RegEx Power!</label></div><br /><br /><input type="button" id="delete_dm_submit" value="Delete!" /><input type="hidden" id="delete_dm_count_inbox" value="0"/><input type="hidden" id="delete_dm_count_sent" value="0"/><br /><br /></form></div>' + side.innerHTML;
     
-    var deleteMessages = function(iframe) {
-        // Function to delete messages in the iframe that called it
-        // Determine our proper iframe usage
-        var bg_twitter;
-        if (iframe.contentDocument) {   // Firefox/safari
-            var bg_twitter = iframe.contentDocument;
-        } else if (iframe.contentWindow) {  // IE
-            var bg_twitter = iframe.contentWindow.document;
-        }
+    var deleteMessages = function(url) {
+        // Function to delete messages in the, with the current_url passed as a parameter
+
+        var base_url = 'http://twitter.com/direct_messages';
         
-        var url = 'http://twitter.com/direct_messages';
-        if ($('#dpc_twitter_dms').attr("src") && $('#dpc_twitter_dms').attr("src").indexOf("/sent") > 0) {
-            url += '/sent';
+        if (url && url.indexOf("/sent") > 0) {
+            base_url += '/sent';
         } else if ($('#delete_dm_inbox').attr("checked") == false && $('#delete_dm_sent').attr("checked") == true) {
-            url += '/sent';
+            base_url += '/sent';
         }
         
         // See if we've reached the end.
-        if (!bg_twitter.getElementById('timeline') || bg_twitter.getElementById('timeline').getElementsByTagName('li').length == 0) {
-            if ($('#delete_dm_sent').attr("checked") && ($('#dpc_twitter_dms').attr("src").indexOf("/sent") < 0)) {
-                $('#dpc_twitter_dms').attr("src", url + '/sent?page=1');
+        if ($("#timeline").length == 0 || $("li.direct_message").length == 0) {
+            if ($('#delete_dm_sent').attr("checked") && (url.indexOf("/sent") < 0)) {
+                url = base_url + '/sent?page=1';
+                $("#timeline").load(url + " #timeline li", '', function(){deleteMessages(url)})
                 return;
             } else {
                 var del_inbox = $('#delete_dm_count_inbox').attr("value");
@@ -42,6 +37,7 @@
                 
                 alert('You\'re all done!\nThanks for using the Twitter DM Deleter.\n\n'+del_inbox+' inbox messages whacked and '+del_sent+' sent messages.\n\n@dacort');
                 location.href = "http://twitter.com/direct_messages";
+                return;
             }
         }
         
@@ -69,11 +65,12 @@
         
         // Replace the contents of the table on screen with the contents of the iframe
         // If this user has no messages, we have to use the h2 header
-        if (document.getElementById('timeline')) {
-            document.getElementById('timeline').parentNode.innerHTML = bg_twitter.getElementById('timeline').parentNode.innerHTML;
-        } else {
-            document.getElementById('content').getElementsByTagName('h2')[0].parentNode.innerHTML = bg_twitter.getElementById('timeline').parentNode.innerHTML;
-        }
+        // TODO: replace this functionality
+        // if (document.getElementById('timeline')) {
+        //     document.getElementById('timeline').parentNode.innerHTML = $("#timeline", twitter_data).parent().html();
+        // } else {
+        //     document.getElementById('content').getElementsByTagName('h2')[0].parentNode.innerHTML = $("#timeline", twitter_data).parent().html();
+        // }
         var tweet_list = document.getElementById('timeline').getElementsByTagName('li');
         
         var messages_deleted = 0;
@@ -129,7 +126,7 @@
         }
         
         // Update the slick counters
-        if ($('#dpc_twitter_dms').attr("src").indexOf("/sent") > 0) {
+        if (url.indexOf("/sent") > 0) {
             var val = parseInt($('#delete_dm_count_sent').attr("value"));
             $('#delete_dm_count_sent').attr("value", val + messages_deleted);
         } else {
@@ -156,13 +153,14 @@
             } else {
                 
                 // We've looped through, now let's try to load the next page
-                var current_page = $('#dpc_twitter_dms').attr("src").substr($('#dpc_twitter_dms').attr("src").lastIndexOf("=")+1);
+                var current_page = url.substr(url.lastIndexOf("=")+1);
                 if (messages_deleted == 0) {
                     current_page++;
                 }
 
                 // Make sure we even have another page (TODO)
-                $('#dpc_twitter_dms').attr("src", url + '?page='+current_page);
+                url = base_url + '?page='+current_page;
+                $("#timeline").load(url + " #timeline li", '', function(){deleteMessages(url)});
             }
         }
         
@@ -205,19 +203,9 @@
             }
         }
         
-		// iframe for loading pages
-        var iframe =  document.createElement('iframe'); 
-        iframe.style.border = '1px solid #FFFFFF';
-        iframe.frameBorder = '0';
-        iframe.style.display = 'none';
-        iframe.style.height = '100px';
-        iframe.style.width = '100%';       
-        iframe.id = 'dpc_twitter_dms';
-        iframe.onload=function(){deleteMessages(document.getElementById('dpc_twitter_dms'))};
-        iframe.src = url;
-        // Append the iframe to an element that won't get deleted with our mucking
-        document.getElementById('timeline').parentNode.parentNode.appendChild(iframe);
-        
+        // Load our data into the current timeline
+        $("#timeline").load(url + " #timeline li", '', function(){deleteMessages(url)});
+
     }
     // Now using jquery, one statement
     $('#delete_dm_submit').bind('click', loadFrame);
