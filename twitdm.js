@@ -5,10 +5,10 @@
 // ==/UserScript==
 (function(){
 
-	var Version = '0.6';
-	var lastUpdate = '2009.04.02';
+	var Version = '0.6.1';
+	var lastUpdate = '2009.05.01';
 	var scriptURL = 'http://dcortesi.com/dm_deleter/twitdm_dev.js';
-	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/) || !location.href.match(/timeline\/direct_messages$/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='" + scriptURL + "';document.body.appendChild(s);})();void(0);";
+	var scriptText = "javascript:(function(){if(!location.href.match(/http:\/\/twitter.com\/direct_messages/) && !location.href.match(/timeline\/direct_messages$/) && !location.href.match(/http:\/\/twitter.com\#inbox/)){if(confirm('You%20must%20be%20on%20the%20Twitter%20direct%20messages%20page.\nWould%20you%20like%20me%20to%20take%20you%20there?')){location.href='http://twitter.com/direct_messages';};return%20false;};var%20s%20=%20document.createElement('script');s.charset='utf-8';s.type='text/javascript';s.src='" + scriptURL + "';document.body.appendChild(s);})();void(0);";
 
     var side = document.getElementById('side');
     if(side == null) return;
